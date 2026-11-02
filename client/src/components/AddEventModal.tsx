@@ -98,7 +98,7 @@ export function AddEventModal({ open, onClose, onCreated }: AddEventModalProps) 
     } else if (!open && dialog.open) {
       dialog.close();
     }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps -- only react to open/close
+  }, [open]); // Only react to open/close.
 
   const clubGroups = useMemo(
     () =>

@@ -21,6 +21,15 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
   const majors = useMajors();
   const [search, setSearch] = useState(filters.q);
   const lastSentSearch = useRef(filters.q);
+  const chipsRef = useRef<HTMLDivElement>(null);
+
+  // On phones the chips scroll sideways; reveal the first active one when a shared link loads.
+  useEffect(() => {
+    const chips = chipsRef.current;
+    const active = chips?.querySelector<HTMLElement>('[data-category][aria-pressed="true"]');
+    if (chips && active) chips.scrollLeft = active.offsetLeft - chips.offsetLeft - 16;
+    // Runs once the chips have rendered, not on every filter change.
+  }, [categories.data]);
 
   // Keep the input in sync when filters change elsewhere (e.g. "Clear filters").
   useEffect(() => {
@@ -48,7 +57,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
 
   return (
     <section aria-label="Filters" className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
+      <div ref={chipsRef} className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
         <button
           type="button"
           aria-pressed={filters.categories.length === 0}
@@ -62,6 +71,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           return (
             <button
               key={category.id}
+              data-category={category.id}
               type="button"
               aria-pressed={active}
               onClick={() => toggleCategory(category.id)}
