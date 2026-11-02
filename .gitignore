@@ -8,3 +8,4 @@ coverage/
 
 # Local event storage (seeded on first run)
 server/data/
+*.tsbuildinfo
