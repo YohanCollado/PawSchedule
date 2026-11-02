@@ -1,17 +1,39 @@
+import { useEffect, useState } from "react";
 import { useEvents } from "./api/queries";
+import type { EventWithClub } from "./api/types";
+import { AddEventModal } from "./components/AddEventModal";
 import { EmptyState, ErrorState, EventList, EventListSkeleton } from "./components/EventList";
 import { FilterBar } from "./components/FilterBar";
 import { Header } from "./components/Header";
 import { useUrlFilters } from "./hooks/useUrlFilters";
+import { dayLabel } from "./lib/dates";
 
 export default function App() {
   const { filters, setFilters, clearFilters } = useUrlFilters();
   const events = useEvents(filters);
   const hasFilters = Boolean(filters.categories.length || filters.major || filters.campus || filters.q);
 
+  const [addOpen, setAddOpen] = useState(false);
+  const [toast, setToast] = useState("");
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(""), 5000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  const handleCreated = (event: EventWithClub) => {
+    setAddOpen(false);
+    const when = dayLabel(new Date(event.start));
+    setToast(
+      `"${event.title}" added for ${when === "Today" || when === "Tomorrow" ? when.toLowerCase() : when}.` +
+        (hasFilters ? " Clear filters if you don't see it." : ""),
+    );
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
-      <Header onAddEvent={() => {}} />
+      <Header onAddEvent={() => setAddOpen(true)} />
 
       <main className="mx-auto max-w-5xl space-y-6 px-4 py-6">
         <div>
@@ -36,6 +58,16 @@ export default function App() {
           </div>
         )}
       </main>
+
+      <AddEventModal open={addOpen} onClose={() => setAddOpen(false)} onCreated={handleCreated} />
+
+      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-4 flex justify-center px-4">
+        {toast && (
+          <p className="pointer-events-auto max-w-md rounded-lg bg-navy px-4 py-3 text-sm text-white shadow-lg">
+            {toast}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
