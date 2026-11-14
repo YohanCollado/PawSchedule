@@ -1,0 +1,49 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Category {
+  id    String  @id
+  name  String  
+  clubs Club[]
+}
+
+model Major {
+  id    String  @id
+  name  String
+  clubs Club[]
+}
+
+model Club {
+  id          String    @id
+  name        String
+  categoryId  String    
+  category    Category  @relation(fields: [categoryId], references: [id])
+  majors      Major[]
+  events      Event[]
+}
+
+model Event {
+  id          String    @id @default(uuid())
+  title       String
+  description String
+  clubId      String
+  location    String
+  campus      String
+  start       DateTime
+  end         DateTime
+  createdAt   DateTime  @default(now())
+  perks       String[]
+  source      String    @default("manual")
+  club        Club      @relation(fields: [clubId], references: [id])
+}

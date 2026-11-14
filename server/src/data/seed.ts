@@ -1,3 +1,7 @@
+import "dotenv/config";
+import { pathToFileURL } from "node:url";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "../generated/prisma/client.js";
 import type { Campus, Category, Club, Event, Major } from "../types.js";
 
 export const PERKS = [
@@ -154,5 +158,89 @@ export function buildSeedEvents(now: Date = new Date()): Event[] {
       source: "manual",
       createdAt: now.toISOString(),
     };
+  });
+}
+
+export async function seedDatabase(connectionString = process.env.DATABASE_URL!) {
+  const adapter = new PrismaPg({ connectionString });
+  const prisma = new PrismaClient({ adapter });
+
+  try {
+    // 1. Seed Categories first
+    for (const category of categories) {
+      await prisma.category.upsert({
+        where: { id: category.id },
+        update: { name: category.name },
+        create: { id: category.id, name: category.name },
+      });
+    }
+
+    // 2. Seed Majors next
+    for (const major of majors) {
+      await prisma.major.upsert({
+        where: { id: major.id },
+        update: { name: major.name },
+        create: { id: major.id, name: major.name },
+      });
+    }
+
+    // 3. Seed Clubs (depends on Category & Majors)
+    for (const club of clubs) {
+      await prisma.club.upsert({
+        where: { id: club.id },
+        update: {
+          name: club.name,
+          categoryId: club.categoryId,
+          majors: { set: club.majorIds.map((id) => ({ id })) },
+        },
+        create: {
+          id: club.id,
+          name: club.name,
+          categoryId: club.categoryId,
+          majors: { connect: club.majorIds.map((id) => ({ id })) },
+        },
+      });
+    }
+
+    // 4. Seed Events last (depends on Club)
+    const seedEvents = buildSeedEvents();
+    for (const event of seedEvents) {
+      await prisma.event.upsert({
+        where: { id: event.id },
+        update: {
+          title: event.title,
+          description: event.description,
+          clubId: event.clubId,
+          start: new Date(event.start),
+          end: new Date(event.end),
+          location: event.location,
+          campus: event.campus,
+          perks: event.perks,
+        },
+        create: {
+          id: event.id,
+          title: event.title,
+          description: event.description,
+          clubId: event.clubId,
+          start: new Date(event.start),
+          end: new Date(event.end),
+          location: event.location,
+          campus: event.campus,
+          perks: event.perks,
+          source: event.source,
+        },
+      });
+    }
+
+    console.log("Seeded categories, majors, clubs, and events successfully.");
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  seedDatabase().catch((err) => {
+    console.error("Failed to seed database:", err);
+    process.exit(1);
   });
 }
