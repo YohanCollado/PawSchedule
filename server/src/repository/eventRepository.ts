@@ -1,3 +1,6 @@
+import "dotenv"
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "../generated/prisma/client.js";
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
@@ -12,6 +15,7 @@ import type {
   Major,
   NewEvent,
 } from "../types.js";
+
 
 /**
  * All data access goes through this interface so routes never touch storage
@@ -112,6 +116,151 @@ export function createJsonRepository({ filePath, now = new Date() }: JsonReposit
     async getClub(id) {
       return clubsById.get(id);
     },
+  };
+}
+
+export function createPrismaRepository(
+  connectionString = process.env.DATABASE_URL!
+): Repository {
+
+  const adapter = new PrismaPg({connectionString});
+  const prisma = new PrismaClient({ adapter});
+
+  function toEventWithClub(row: {
+    id: string;
+    title: string;
+    description: string;
+    clubId: string;
+    start: Date;
+    end: Date;
+    location: string;
+    campus: string;
+    perks: string[];
+    source: string;
+    createdAt: Date;
+    club: { name: string; category: Category };
+  }): EventWithClub {
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      clubId: row.clubId,
+      start: row.start.toISOString(),
+      end: row.end.toISOString(),
+      location: row.location,
+      campus: row.campus as Event["campus"],
+      perks: row.perks,
+      source: row.source as Event["source"],
+      createdAt: row.createdAt.toISOString(),
+      clubName: row.club.name,
+      category: row.club.category,
+    };
+  }
+
+  return {
+    async listEvents(filter) {
+       const q = filter.q?.trim();
+
+      const rows = await prisma.event.findMany({
+        where: {
+          start: {
+            gte: filter.from,
+            ...(filter.to ? { lte: filter.to } : {}),
+          },
+          ...(filter.clubId ? { clubId: filter.clubId } : {}),
+          ...(filter.campus ? { campus: filter.campus } : {}),
+          ...(filter.categoryIds?.length || filter.majorId
+            ? {
+                club: {
+                  ...(filter.categoryIds?.length
+                    ? { categoryId: { in: filter.categoryIds } }
+                    : {}),
+                  ...(filter.majorId
+                    ? { majors: { some: { id: filter.majorId } } }
+                    : {}),
+                },
+              }
+            : {}),
+          ...(q
+            ? {
+                OR: [
+                  { title: { contains: q, mode: "insensitive" } },
+                  { description: { contains: q, mode: "insensitive" } },
+                  { location: { contains: q, mode: "insensitive" } },
+                  { club: { name: { contains: q, mode: "insensitive" } } },
+                ],
+              }
+            : {}),
+        },
+        include: {
+          club: {
+            include: { category: true },
+          },
+        },
+        orderBy: { start: "asc" },
+      });
+
+      return rows.map(toEventWithClub);
+    },
+    async createEvent(input) {
+      const created = await prisma.event.create({
+        data: {
+          ...input,
+          start: new Date(input.start),
+          end: new Date(input.end),
+        },
+        include: {
+          club: {
+            include: { category: true },
+          },
+        },
+      });
+
+      return toEventWithClub(created);
+    },
+    async listCategories() {
+      return prisma.category.findMany({
+        orderBy: { name: "asc" },
+      });
+    },
+    async listMajors() {
+      return prisma.category.findMany({
+        orderBy: { name: "asc" },
+      });
+    },
+    async listClubs(filter = {}) {
+      const clubs = await prisma.club.findMany({
+        where: {
+          ...(filter.categoryId ? { categoryId: filter.categoryId } : {}),
+          ...(filter.majorId
+            ? { majors: { some: { id: filter.majorId } } }
+            : {}),
+        },
+        include: { majors: { select: { id: true } } },
+        orderBy: { name: "asc" },
+      });
+
+      return clubs.map((club) => ({
+        id: club.id,
+        name: club.name,
+        categoryId: club.categoryId,
+        majorIds: club.majors.map((major) => major.id),
+      }));
+    },
+    async getClub(id) {
+       const club = await prisma.club.findUnique({
+        where: { id },
+        include: { majors: { select: { id: true } } },
+      });
+      if (!club) return undefined;
+
+      return {
+        id: club.id,
+        name: club.name,
+        categoryId: club.categoryId,
+        majorIds: club.majors.map((major) => major.id),
+      };
+    }
   };
 }
 
