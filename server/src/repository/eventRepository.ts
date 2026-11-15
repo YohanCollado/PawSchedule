@@ -4,10 +4,15 @@ import { PrismaClient } from "../generated/prisma/client.js";
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import { buildSeedEvents, categories, clubs, majors, SEED_ID_PREFIX } from "../data/seed.js";
+import { buildSeedEvents, buildSeedPosts, categories, clubs, majors, SEED_ID_PREFIX } from "../data/seed.js";
 import type {
   Category,
   Club,
+  Comment,
+  ExperiencePost,
+  NewComment,
+  NewPost,
+  PostWithComments,
   ClubFilter,
   Event,
   EventFilter,
@@ -28,6 +33,13 @@ export interface Repository {
   listMajors(): Promise<Major[]>;
   listClubs(filter?: ClubFilter): Promise<Club[]>;
   getClub(id: string): Promise<Club | undefined>;
+  getEvent(id: string): Promise<EventWithClub | undefined>;
+  /** Posts for an event, newest first, each with its comments oldest first. */
+  listPosts(eventId: string): Promise<PostWithComments[]>;
+  createPost(eventId: string, input: NewPost): Promise<PostWithComments>;
+  postExists(id: string): Promise<boolean>;
+  listComments(postId: string): Promise<Comment[]>;
+  createComment(postId: string, input: NewComment): Promise<Comment>;
 }
 
 export interface JsonRepositoryOptions {
@@ -45,6 +57,12 @@ export function createJsonRepository({ filePath, now = new Date() }: JsonReposit
   const events: Event[] = [...buildSeedEvents(now), ...loadUserEvents(filePath)];
   const clubsById = new Map(clubs.map((club) => [club.id, club]));
   const categoriesById = new Map(categories.map((category) => [category.id, category]));
+  const seed = buildSeedPosts(now);
+  const posts: ExperiencePost[] = seed.posts;
+  const comments: Comment[] = seed.comments;
+
+  const commentsFor = (postId: string) =>
+    comments.filter((comment) => comment.postId === postId).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
   function withClub(event: Event): EventWithClub {
     const club = clubsById.get(event.clubId)!;
@@ -115,6 +133,38 @@ export function createJsonRepository({ filePath, now = new Date() }: JsonReposit
 
     async getClub(id) {
       return clubsById.get(id);
+    },
+
+    async getEvent(id) {
+      const event = events.find((item) => item.id === id);
+      return event ? withClub(event) : undefined;
+    },
+
+    async listPosts(eventId) {
+      return posts
+        .filter((post) => post.eventId === eventId)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .map((post) => ({ ...post, comments: commentsFor(post.id) }));
+    },
+
+    async createPost(eventId, input) {
+      const post: ExperiencePost = { ...input, id: randomUUID(), eventId, createdAt: new Date().toISOString() };
+      posts.push(post);
+      return { ...post, comments: [] };
+    },
+
+    async postExists(id) {
+      return posts.some((post) => post.id === id);
+    },
+
+    async listComments(postId) {
+      return commentsFor(postId);
+    },
+
+    async createComment(postId, input) {
+      const comment: Comment = { ...input, id: randomUUID(), postId, createdAt: new Date().toISOString() };
+      comments.push(comment);
+      return comment;
     },
   };
 }
@@ -260,8 +310,58 @@ export function createPrismaRepository(
         categoryId: club.categoryId,
         majorIds: club.majors.map((major) => major.id),
       };
-    }
+    },
+
+    async getEvent(id) {
+      const row = await prisma.event.findUnique({
+        where: { id },
+        include: { club: { include: { category: true } } },
+      });
+      return row ? toEventWithClub(row) : undefined;
+    },
+
+    async listPosts(eventId) {
+      const rows = await prisma.experiencePost.findMany({
+        where: { eventId },
+        orderBy: { createdAt: "desc" },
+        include: { comments: { orderBy: { createdAt: "asc" } } },
+      });
+      return rows.map((row) => ({ ...toPost(row), comments: row.comments.map(toComment) }));
+    },
+
+    async createPost(eventId, input) {
+      const row = await prisma.experiencePost.create({ data: { ...input, eventId } });
+      return { ...toPost(row), comments: [] };
+    },
+
+    async postExists(id) {
+      return (await prisma.experiencePost.count({ where: { id } })) > 0;
+    },
+
+    async listComments(postId) {
+      const rows = await prisma.comment.findMany({ where: { postId }, orderBy: { createdAt: "asc" } });
+      return rows.map(toComment);
+    },
+
+    async createComment(postId, input) {
+      return toComment(await prisma.comment.create({ data: { ...input, postId } }));
+    },
   };
+}
+
+function toPost(row: Omit<ExperiencePost, "createdAt"> & { createdAt: Date }): ExperiencePost {
+  return {
+    id: row.id,
+    eventId: row.eventId,
+    authorName: row.authorName,
+    whatIDid: row.whatIDid,
+    whatILearned: row.whatILearned,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+function toComment(row: Omit<Comment, "createdAt"> & { createdAt: Date }): Comment {
+  return { id: row.id, postId: row.postId, authorName: row.authorName, body: row.body, createdAt: row.createdAt.toISOString() };
 }
 
 function loadUserEvents(filePath: string | null): Event[] {

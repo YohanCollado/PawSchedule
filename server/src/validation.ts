@@ -60,6 +60,27 @@ export const createEventSchema = z
     when: (payload) => eventDates.safeParse(payload.value).success,
   });
 
+const text = (label: string, min: number, max: number) => {
+  const required = z.string({ error: `${label} is required` }).trim().min(1, `${label} is required`);
+  return (min > 1 ? required.min(min, `${label} must be at least ${min} characters`) : required).max(
+    max,
+    `${label} must be at most ${max} characters`,
+  );
+};
+
+export const POST_LIMITS = { name: 60, textMin: 10, textMax: 2000, comment: 1000 } as const;
+
+export const createPostSchema = z.object({
+  authorName: text("Your name", 1, POST_LIMITS.name),
+  whatIDid: text("What you did", POST_LIMITS.textMin, POST_LIMITS.textMax),
+  whatILearned: text("What you learned", POST_LIMITS.textMin, POST_LIMITS.textMax),
+});
+
+export const createCommentSchema = z.object({
+  authorName: text("Your name", 1, POST_LIMITS.name),
+  body: text("Comment", 1, POST_LIMITS.comment),
+});
+
 export type CreateEventInput = z.infer<typeof createEventSchema>;
 
 export function fieldErrors(error: z.ZodError) {

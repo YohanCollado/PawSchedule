@@ -1,6 +1,7 @@
 import express, { type ErrorRequestHandler } from "express";
 import type { Repository } from "./repository/eventRepository.js";
 import { eventsRouter } from "./routes/events.js";
+import { postsRouter } from "./routes/posts.js";
 import { referenceRouter } from "./routes/reference.js";
 
 export function createApp(repo: Repository) {
@@ -11,6 +12,7 @@ export function createApp(repo: Repository) {
     res.json({ status: "ok" });
   });
   app.use("/api/events", eventsRouter(repo));
+  app.use("/api/posts", postsRouter(repo));
   app.use("/api", referenceRouter(repo));
 
   app.use("/api", (_req, res) => {

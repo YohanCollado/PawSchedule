@@ -2,7 +2,7 @@ import "dotenv/config";
 import { pathToFileURL } from "node:url";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client.js";
-import type { Campus, Category, Club, Event, Major } from "../types.js";
+import type { Campus, Category, Club, Comment, Event, ExperiencePost, Major } from "../types.js";
 
 export const PERKS = [
   "Free food",
@@ -159,6 +159,11 @@ export function buildSeedEvents(now: Date = new Date()): Event[] {
       createdAt: now.toISOString(),
     };
   });
+}
+
+/** Sample experience posts and comments (filled in by the seed step). */
+export function buildSeedPosts(_now: Date = new Date()): { posts: ExperiencePost[]; comments: Comment[] } {
+  return { posts: [], comments: [] };
 }
 
 export async function seedDatabase(connectionString = process.env.DATABASE_URL!) {
