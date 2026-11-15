@@ -4,6 +4,17 @@ All FIU student club events in one place. Students can browse upcoming events
 and filter them by club category (Academic, Cultural, Greek Life, …), by their
 major, by campus, or by keyword.
 
+## Documentation
+
+| Document | What's in it |
+| --- | --- |
+| [Project plan and feasibility](docs/project-plan.md) | Problem, scope of Sprints A and B, how we work, feasibility, risks |
+| [Requirements](docs/requirements.md) | User stories with acceptance criteria, each linked to its test |
+| [Architecture](docs/architecture.md) | Components, endpoints, screens and the main request flow |
+| [Data model](docs/data-model.md) | ER diagram, tables and rules |
+| [Test report](docs/test-report.md) | 25 automated API tests (all passing), manual checks, gaps |
+| [Walkthrough](docs/walkthrough.md) | Step-by-step tour of the main path, with how to run it |
+
 ## Tech stack
 
 | Part   | Stack                                                                 |
