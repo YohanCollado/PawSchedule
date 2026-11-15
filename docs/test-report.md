@@ -5,7 +5,7 @@
 | | |
 | --- | --- |
 | Date run | 2026-11-15 |
-| Branch | `sprint-c-experience-posts` |
+| Branch | `sprint-b-experience-posts` |
 | Command | `npm test` (Vitest 4.1.12 + Supertest, Node 24.13.0, Windows 11) |
 | Test files | `server/test/events.test.ts` (Sprint A), `server/test/posts.test.ts` (Sprint B) |
 | Duration | about 0.7 s |
