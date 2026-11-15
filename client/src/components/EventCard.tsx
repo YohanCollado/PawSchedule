@@ -22,7 +22,11 @@ export function EventCard({ event }: { event: EventWithClub }) {
     <article className="rounded-xl border border-slate-200 border-l-4 border-l-gold bg-white p-4 shadow-sm transition hover:shadow-md">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="text-base font-semibold text-navy sm:text-lg">{event.title}</h3>
+          <h3 className="text-base font-semibold text-navy sm:text-lg">
+            <a href={`/events/${event.id}`} className="hover:underline">
+              {event.title}
+            </a>
+          </h3>
           <p className="text-sm text-slate-600">{event.clubName}</p>
         </div>
         <span
