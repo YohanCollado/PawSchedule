@@ -24,7 +24,7 @@ import type {
 
 /**
  * All data access goes through this interface so routes never touch storage
- * directly. Sprint B swaps the JSON implementation for Prisma + PostgreSQL.
+ * directly. Prisma + PostgreSQL (Supabase) or in-memory seed data for tests.
  */
 export interface Repository {
   listEvents(filter: EventFilter): Promise<EventWithClub[]>;

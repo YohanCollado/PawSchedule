@@ -1,4 +1,4 @@
-# Requirements: Sprint C
+# Requirements: Sprint B
 
 **Product:** FIU students post what they did and learned at a club event, and other students comment on
 those posts.

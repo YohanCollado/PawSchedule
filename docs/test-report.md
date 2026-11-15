@@ -7,7 +7,7 @@
 | Date run | 2026-11-15 |
 | Branch | `sprint-c-experience-posts` |
 | Command | `npm test` (Vitest 4.1.12 + Supertest, Node 24.13.0, Windows 11) |
-| Test files | `server/test/events.test.ts` (Sprint B), `server/test/posts.test.ts` (Sprint C) |
+| Test files | `server/test/events.test.ts` (Sprint A), `server/test/posts.test.ts` (Sprint B) |
 | Duration | about 0.7 s |
 
 The tests start the real Express app and send real HTTP requests to it with Supertest. They run against
@@ -18,7 +18,7 @@ tests yet (see [Not covered](#not-covered)).
 To reproduce: `npm install`, then `npm test` from the repo root. For per-test output, run
 `npx vitest run --reporter=verbose` in `server/`.
 
-## Sprint B: events and reference data (`events.test.ts`)
+## Sprint A: events and reference data (`events.test.ts`)
 
 | # | Endpoint | Test case | What it checks | Result |
 | --- | --- | --- | --- | --- |
@@ -33,7 +33,7 @@ To reproduce: `npm install`, then `npm test` from the repo root. For per-test ou
 | 9 | POST /api/events | returns 400 when the club does not exist | An unknown `clubId` returns "Club not found" | ✅ Pass |
 | 10 | GET /api/clubs | filters clubs by category and major | Technology + Information Technology returns exactly ACM, INIT and WiCS | ✅ Pass |
 
-## Sprint C: experience posts and comments (`posts.test.ts`)
+## Sprint B: experience posts and comments (`posts.test.ts`)
 
 | # | Endpoint | Test case | What it checks | Result |
 | --- | --- | --- | --- | --- |

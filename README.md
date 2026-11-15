@@ -69,7 +69,7 @@ All data access goes through `server/src/repository/eventRepository.ts` (`create
 3. `npm run dev`. The API logs `using PostgreSQL (Prisma)` when it is
    connected to the database.
 
-## Experience posts and comments (Sprint C)
+## Experience posts and comments (Sprint B)
 
 Open any event (click its title, or pick one under **"Went to an event? Share
 your experience"** on the home page) to go to `/events/:id`. The page shows:
