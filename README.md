@@ -26,7 +26,9 @@ npm run dev        # API on http://localhost:3000, web app on http://localhost:5
 
 Open http://localhost:5173. The Vite dev server proxies `/api` to the API.
 
-Copy `server/.env.example` to `server/.env` and paste the team Supabase password.
+Without a `server/.env` the API runs on in-memory seed data, which is enough to
+try everything. To use the team's Supabase database, see
+[Running with Supabase](#running-with-supabase) below.
 
 Other commands (run from the repo root):
 
@@ -47,12 +49,45 @@ for the web app.)
 Data is stored in PostgreSQL (hosted on Supabase) and accessed through Prisma (`server/prisma/schema.prisma`). 
 Configure the database connection by copying `server/.env.example` to `server/.env` and setting `DATABASE_URL`.
 
-Seed data is defined in `server/src/data/seed.ts`: 12 categories, 16 majors, 24 clubs and 25 starter events generated relative 
-to the seed time. Run `npm run db:seed -w server` to populate or refresh the seed records without duplicating existing data or 
+Seed data is defined in `server/src/data/seed.ts`: 12 categories, 16 majors, 24 clubs and 29 events generated relative to the
+seed time (four of them in the past, with sample experience posts and comments). Run `npm run db:seed -w server` to populate or refresh the seed records without duplicating existing data or 
 affecting user-created events.
 
 All data access goes through `server/src/repository/eventRepository.ts` (`createPrismaRepository` in production, 
-`createJsonRepository` in-memory for API tests), so routes never touch storage directly.
+`createJsonRepository` in-memory for API tests and when `DATABASE_URL` isn't set), so routes never touch storage directly.
+
+### Running with Supabase
+
+1. Copy `server/.env.example` to `server/.env` and set `DATABASE_URL` to the
+   Supabase connection string (Project Settings → Database → Connection string,
+   **Session pooler**). `server/.env` is gitignored, so never commit it.
+2. Create the tables and load the sample data:
+   ```bash
+   npm run db:migrate -w server   # applies server/prisma/migrations
+   npm run db:seed -w server      # clubs, events, sample posts and comments (safe to re-run)
+   ```
+3. `npm run dev`. The API logs `using PostgreSQL (Prisma)` when it is
+   connected to the database.
+
+## Experience posts and comments (Sprint C)
+
+Open any event (click its title, or pick one under **"Went to an event? Share
+your experience"** on the home page) to go to `/events/:id`. The page shows:
+
+- the event details
+- a **Share your experience** form (name, what you did, what you learned; both
+  text fields are required, 10–2000 characters)
+- every student post, newest first, with its comments and a comment box
+  (1–1000 characters)
+
+The four past seed events (for example "Intro to React Workshop") come with
+sample posts and comments. The data model lives in
+`server/prisma/schema.prisma`: `Event` → `ExperiencePost` → `Comment`, and
+deleting a parent deletes its children. There's no login yet: posts store the
+author's name, and `authorId` is reserved for when there is.
+
+`npm test` runs the API tests for these endpoints in `server/test/posts.test.ts`
+against the in-memory store, so no database is needed.
 
 ## API
 
@@ -61,6 +96,11 @@ All data access goes through `server/src/repository/eventRepository.ts` (`create
 | GET    | `/api/health`     | `{ "status": "ok" }` |
 | GET    | `/api/events`     | Upcoming events (start ≥ now), sorted by start, with `clubName` and `category`. Query: `category` (comma-separated ids), `major`, `club`, `campus`, `q`, `from`, `to` (ISO dates) |
 | POST   | `/api/events`     | Body: `title`, `clubId`, `start`, `end`, `location`, `campus`, optional `description` and `perks[]`. Returns `201` with the event or `400` with `fieldErrors` |
+| GET    | `/api/events/:id` | One event with `clubName` and `category`, or `404` |
+| GET    | `/api/events/:id/posts` | Experience posts for the event, newest first, each with `comments[]` (oldest first). `404` if the event doesn't exist |
+| POST   | `/api/events/:id/posts` | Body: `authorName` (≤60), `whatIDid`, `whatILearned` (10–2000 each). `201` with the post, `400` with `fieldErrors`, `404` for an unknown event |
+| GET    | `/api/posts/:id/comments` | Comments on a post, oldest first. `404` if the post doesn't exist |
+| POST   | `/api/posts/:id/comments` | Body: `authorName` (≤60), `body` (1–1000). `201` with the comment, `400` with `fieldErrors`, `404` for an unknown post |
 | GET    | `/api/categories` | All categories |
 | GET    | `/api/majors`     | All majors |
 | GET    | `/api/clubs`      | Query: `category`, `major` |
@@ -75,12 +115,13 @@ only show when no major is selected.
 client/
   src/api/            typed fetch wrapper, TanStack Query hooks, shared types
   src/components/     Header, FilterBar, EventList, EventCard, AddEventModal
+  src/pages/          EventPage (posts, share form, comments)
   src/hooks/          useUrlFilters (filters live in the URL query string)
   src/lib/            date grouping and formatting
 server/
   prisma/             Prisma schema and database migrations
   src/app.ts          Express app (routes + error handling)
-  src/routes/         events and reference-data routes
+  src/routes/         events, posts/comments and reference-data routes
   src/repository/     data access layer (Prisma + PostgreSQL)
   src/data/seed.ts    seed data and database seeder
   src/generated/      auto-generated Prisma Client (gitignored)
