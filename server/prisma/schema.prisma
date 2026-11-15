@@ -46,4 +46,32 @@ model Event {
   perks       String[]
   source      String    @default("manual")
   club        Club      @relation(fields: [clubId], references: [id])
+  posts       ExperiencePost[]
+}
+
+/// A student's write-up of a club event they attended.
+model ExperiencePost {
+  id           String    @id @default(uuid())
+  eventId      String
+  event        Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  /// Null until we add login; authorName is shown in the meantime.
+  authorId     String?
+  authorName   String
+  whatIDid     String
+  whatILearned String
+  createdAt    DateTime  @default(now())
+  comments     Comment[]
+
+  @@index([eventId, createdAt])
+}
+
+model Comment {
+  id         String         @id @default(uuid())
+  postId     String
+  post       ExperiencePost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorName String
+  body       String
+  createdAt  DateTime       @default(now())
+
+  @@index([postId, createdAt])
 }

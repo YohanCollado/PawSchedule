@@ -1,4 +1,4 @@
-import "dotenv"
+import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client.js";
 import { randomUUID } from "node:crypto";
@@ -224,7 +224,7 @@ export function createPrismaRepository(
       });
     },
     async listMajors() {
-      return prisma.category.findMany({
+      return prisma.major.findMany({
         orderBy: { name: "asc" },
       });
     },
