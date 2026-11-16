@@ -55,3 +55,35 @@ export interface EventFilters {
   campus: string;
   q: string;
 }
+
+export interface Comment {
+  id: string;
+  postId: string;
+  authorName: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface PostWithComments {
+  id: string;
+  eventId: string;
+  authorName: string;
+  whatIDid: string;
+  whatILearned: string;
+  createdAt: string;
+  comments: Comment[];
+}
+
+export interface NewPostPayload {
+  authorName: string;
+  whatIDid: string;
+  whatILearned: string;
+}
+
+export interface NewCommentPayload {
+  authorName: string;
+  body: string;
+}
+
+/** Mirrors POST_LIMITS in server/src/validation.ts. */
+export const POST_LIMITS = { name: 60, textMin: 10, textMax: 2000, comment: 1000 } as const;

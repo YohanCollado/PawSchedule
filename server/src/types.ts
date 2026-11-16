@@ -56,3 +56,28 @@ export interface ClubFilter {
   categoryId?: string;
   majorId?: string;
 }
+
+export interface Comment {
+  id: string;
+  postId: string;
+  authorName: string;
+  body: string;
+  createdAt: string;
+}
+
+/** A student's write-up of a club event: what they did and what they learned. */
+export interface ExperiencePost {
+  id: string;
+  eventId: string;
+  authorName: string;
+  whatIDid: string;
+  whatILearned: string;
+  createdAt: string;
+}
+
+export interface PostWithComments extends ExperiencePost {
+  comments: Comment[];
+}
+
+export type NewPost = Pick<ExperiencePost, "authorName" | "whatIDid" | "whatILearned">;
+export type NewComment = Pick<Comment, "authorName" | "body">;

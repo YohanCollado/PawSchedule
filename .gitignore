@@ -5,6 +5,8 @@ dist/
 .env.local
 .DS_Store
 coverage/
+server/src/generated/prisma
+server/.env
 
 # Local event storage (seeded on first run)
 server/data/

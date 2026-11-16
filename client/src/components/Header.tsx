@@ -1,6 +1,6 @@
 import { PawIcon, PlusIcon } from "./icons";
 
-export function Header({ onAddEvent }: { onAddEvent: () => void }) {
+export function Header({ onAddEvent }: { onAddEvent?: () => void }) {
   return (
     <header className="bg-navy text-white shadow-md">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4">
@@ -10,6 +10,7 @@ export function Header({ onAddEvent }: { onAddEvent: () => void }) {
             Paw<span className="text-gold-light">Schedule</span>
           </span>
         </a>
+        {onAddEvent && (
         <button
           type="button"
           onClick={onAddEvent}
@@ -18,6 +19,7 @@ export function Header({ onAddEvent }: { onAddEvent: () => void }) {
           <PlusIcon className="h-4 w-4" />
           Add event
         </button>
+        )}
       </div>
     </header>
   );
